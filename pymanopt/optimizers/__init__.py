@@ -3,6 +3,7 @@ from .nelder_mead import NelderMead
 from .particle_swarm import ParticleSwarm
 from .steepest_descent import SteepestDescent
 from .trust_regions import TrustRegions
+from .conjugate_gradient_costgrad import ConjugateGradientCostgrad
 
 
 __all__ = [
@@ -11,6 +12,7 @@ __all__ = [
     "ParticleSwarm",
     "SteepestDescent",
     "TrustRegions",
+    "ConjugateGradientCostgrad"
 ]
 
 

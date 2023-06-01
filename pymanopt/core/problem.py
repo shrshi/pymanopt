@@ -45,8 +45,9 @@ class Problem:
     def __init__(
         self,
         manifold: Manifold,
-        cost: Function,
         *,
+        costgrad: Optional[Function] = None,
+        cost: Optional[Function],
         euclidean_gradient: Optional[Function] = None,
         riemannian_gradient: Optional[Function] = None,
         euclidean_hessian: Optional[Function] = None,
@@ -57,6 +58,7 @@ class Problem:
 
         for function, name in (
             (cost, "cost"),
+            (costgrad, "cost_euclidean_gradient"),
             (euclidean_gradient, "euclidean_gradient"),
             (euclidean_hessian, "euclidean_hessian"),
             (riemannian_gradient, "riemannian_gradient"),
@@ -77,6 +79,8 @@ class Problem:
 
         self._original_cost = cost
         self._cost = self._wrap_function(cost)
+        self._original_cost_grad = costgrad
+        self._costgrad = self._wrap_function_costgrad(costgrad)
 
         if euclidean_gradient is not None:
             euclidean_gradient = self._wrap_gradient_operator(
@@ -199,6 +203,60 @@ class Problem:
             return self._group_return_values(wrapped_gradient, point_layout)
         return wrapped_gradient
 
+    def _group_return_values_costgrad(self, function, signature):
+        """Decorator to group return values according to a given signature.
+
+        Wraps a function inside another function which groups the return
+        values of ``function`` according to the group sizes delineated by
+        ``signature``.
+        """
+        signature = list(signature)
+        signature.insert(0, 1)
+        assert all((isinstance(group, int) for group in signature))
+
+        num_return_values = np.sum(signature)
+
+        @functools.wraps(function)
+        def wrapper(*args, **kwargs):
+            return_values = function(*args, **kwargs)
+            if not isinstance(return_values, (list, tuple)):
+                raise ValueError("Function returned an unexpected value")
+            if len(return_values) != num_return_values:
+                raise ValueError(
+                    "Function returned an unexpected number of arguments"
+                )
+            groups = []
+            i = 0
+            for group_size in signature:
+                if group_size == 1:
+                    group = return_values[i]
+                else:
+                    group = return_values[i : i + group_size]
+                groups.append(group)
+                i += group_size
+            return groups
+
+        return wrapper
+
+    def _wrap_function_costgrad(self, function):
+        point_layout = self.manifold.point_layout
+        if isinstance(point_layout, (tuple, list)):
+            @functools.wraps(function)
+            def wrapper(point):
+                return function(*self._flatten_arguments(point, point_layout))
+            return self._group_return_values_costgrad(wrapper, point_layout)
+
+        assert isinstance(point_layout, int)
+        if point_layout == 1:
+            @functools.wraps(function)
+            def wrapper(point):
+                return function(point)
+        else:
+            @functools.wraps(function)
+            def wrapper(point):
+                return function(*point)
+        return wrapper
+
     def _wrap_hessian_operator(
         self, hessian_operator, *, embed_tangent_vectors=False
     ):
@@ -239,6 +297,10 @@ class Problem:
     @property
     def cost(self):
         return self._cost
+
+    @property
+    def costgrad(self):
+        return self._costgrad
 
     @property
     def euclidean_gradient(self):

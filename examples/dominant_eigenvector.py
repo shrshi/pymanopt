@@ -3,9 +3,10 @@ import tensorflow as tf
 import torch
 
 import pymanopt
-from examples._tools import ExampleRunner
+from _tools import ExampleRunner
+#from examples._tools import ExampleRunner
 from pymanopt.manifolds import Sphere
-from pymanopt.optimizers import SteepestDescent
+from pymanopt.optimizers import ConjugateGradientCostgrad
 
 
 SUPPORTED_BACKENDS = ("autograd", "numpy", "pytorch", "tensorflow")
@@ -27,8 +28,14 @@ def create_cost_and_derivates(manifold, matrix, backend):
             return -x.T @ matrix @ x
 
         @pymanopt.function.numpy(manifold)
-        def euclidean_gradient(x):
-            return -2 * matrix @ x
+        def costgrad(x):
+            return -x.T @ matrix @ x, -2 * matrix @ x
+
+        #@pymanopt.function.numpy(manifold)
+        #def euclidean_gradient(x):
+            #return -2 * matrix @ x
+
+        return cost, costgrad
 
     elif backend == "pytorch":
         matrix_ = torch.from_numpy(matrix)
@@ -55,14 +62,18 @@ def run(backend=SUPPORTED_BACKENDS[0], quiet=True):
     matrix = 0.5 * (matrix + matrix.T)
 
     manifold = Sphere(n)
-    cost, euclidean_gradient = create_cost_and_derivates(
+    cost, costgrad = create_cost_and_derivates(
         manifold, matrix, backend
     )
+    #problem = pymanopt.Problem(
+        #manifold, cost, euclidean_gradient=euclidean_gradient
+    #)
     problem = pymanopt.Problem(
-        manifold, cost, euclidean_gradient=euclidean_gradient
+        manifold, cost = cost, costgrad = costgrad
     )
 
-    optimizer = SteepestDescent(verbosity=2 * int(not quiet))
+
+    optimizer = ConjugateGradientCostgrad(verbosity=2 * int(not quiet))
     estimated_dominant_eigenvector = optimizer.run(problem).point
 
     if quiet:
@@ -96,6 +107,7 @@ def run(backend=SUPPORTED_BACKENDS[0], quiet=True):
 
 
 if __name__ == "__main__":
+    #run("numpy", False)
     runner = ExampleRunner(
         run, "Dominant eigenvector of a PSD matrix", SUPPORTED_BACKENDS
     )

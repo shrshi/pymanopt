@@ -67,8 +67,10 @@ def check_directional_derivative(
         value[k] = problem.cost(y)
 
     # Compute the value f0 of f at x and directional derivative at x along d.
-    f0 = problem.cost(x)
-    grad = problem.riemannian_gradient(x)
+    f0, euclidean_grad = problem.costgrad(x)
+    grad = problem.manifold.euclidean_to_riemannian_gradient(x, euclidean_grad);
+    #f0 = problem.cost(x)
+    #grad = problem.riemannian_gradient(x)
     df0 = problem.manifold.inner_product(x, grad, d)
 
     if use_quadratic_model:
@@ -167,7 +169,9 @@ def check_gradient(problem, x=None, d=None):
     )
     plt.show()
 
-    grad = problem.riemannian_gradient(x)
+    cost, euclidean_grad = problem.costgrad(x)
+    grad = problem.manifold.euclidean_to_riemannian_gradient(x, euclidean_grad);
+    #grad = problem.riemannian_gradient(x)
     try:
         projected_grad = problem.manifold.to_tangent_space(x, grad)
     except NotImplementedError:

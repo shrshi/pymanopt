@@ -67,7 +67,13 @@ def check_directional_derivative(
         value[k] = problem.cost(y)
 
     # Compute the value f0 of f at x and directional derivative at x along d.
-    f0, euclidean_grad = problem.costgrad(x)
+    cost_and_grads = problem.costgrad(x)
+    f0 = cost_and_grads[0]
+    if(len(cost_and_grads) == 2):
+        euclidean_grad = cost_and_grads[1]
+    else:
+        euclidean_grad = cost_and_grads[1:]
+    #f0, euclidean_grad = problem.costgrad(x)
     grad = problem.manifold.euclidean_to_riemannian_gradient(x, euclidean_grad);
     #f0 = problem.cost(x)
     #grad = problem.riemannian_gradient(x)
@@ -169,7 +175,13 @@ def check_gradient(problem, x=None, d=None):
     )
     plt.show()
 
-    cost, euclidean_grad = problem.costgrad(x)
+    cost_and_grads = problem.costgrad(x)
+    cost = cost_and_grads[0]
+    if(len(cost_and_grads) == 2):
+        euclidean_grad = cost_and_grads[1]
+    else:
+        euclidean_grad = cost_and_grads[1:]
+    #cost, euclidean_grad = problem.costgrad(x)
     grad = problem.manifold.euclidean_to_riemannian_gradient(x, euclidean_grad);
     #grad = problem.riemannian_gradient(x)
     try:

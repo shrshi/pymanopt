@@ -2,11 +2,12 @@ import autograd.numpy as np
 import tensorflow as tf
 import torch
 
-import pymanopt
+import pymanopt, matplotlib
 from _tools import ExampleRunner
 #from examples._tools import ExampleRunner
 from pymanopt.manifolds import Sphere
 from pymanopt.optimizers import ConjugateGradientCostgrad
+from pymanopt.tools.diagnostics import check_gradient
 
 
 SUPPORTED_BACKENDS = ("autograd", "numpy", "pytorch", "tensorflow")
@@ -29,7 +30,7 @@ def create_cost_and_derivates(manifold, matrix, backend):
 
         @pymanopt.function.numpy(manifold)
         def costgrad(x):
-            return -x.T @ matrix @ x, -2 * matrix @ x
+            return [-x.T @ matrix @ x, -2 * matrix @ x]
 
         #@pymanopt.function.numpy(manifold)
         #def euclidean_gradient(x):
@@ -71,6 +72,7 @@ def run(backend=SUPPORTED_BACKENDS[0], quiet=True):
     problem = pymanopt.Problem(
         manifold, cost = cost, costgrad = costgrad
     )
+    check_gradient(problem)
 
 
     optimizer = ConjugateGradientCostgrad(verbosity=2 * int(not quiet))

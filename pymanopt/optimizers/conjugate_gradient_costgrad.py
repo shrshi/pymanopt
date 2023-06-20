@@ -234,7 +234,13 @@ class ConjugateGradientCostgrad(Optimizer):
         column_printer.print_header()
 
         # Calculate initial cost-related quantities.
-        cost, euclidean_grad = costgrad(x)
+        cost_and_grads = problem.costgrad(x)
+        cost = cost_and_grads[0]
+        if(len(cost_and_grads) == 2):
+            euclidean_grad = cost_and_grads[1]
+        else:
+            euclidean_grad = cost_and_grads[1:]
+        #cost, euclidean_grad = costgrad(x)
         grad = manifold.euclidean_to_riemannian_gradient(x, euclidean_grad);
         gradient_norm = manifold.norm(x, grad)
         Pgrad = problem.preconditioner(x, grad)
@@ -303,7 +309,13 @@ class ConjugateGradientCostgrad(Optimizer):
             )
 
             # Compute the new cost-related quantities for newx
-            newcost, neweuclidean_grad = costgrad(newx)
+            new_cost_and_grads = problem.costgrad(newx)
+            newcost = new_cost_and_grads[0]
+            if(len(new_cost_and_grads) == 2):
+                neweuclidean_grad = new_cost_and_grads[1]
+            else:
+                neweuclidean_grad = new_cost_and_grads[1:]
+            #newcost, neweuclidean_grad = costgrad(newx)
             newgrad = manifold.euclidean_to_riemannian_gradient(newx, neweuclidean_grad);
             newgradient_norm = manifold.norm(newx, newgrad)
             Pnewgrad = problem.preconditioner(newx, newgrad)

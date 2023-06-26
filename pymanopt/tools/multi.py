@@ -70,7 +70,8 @@ def multilogm(A, *, positive_definite=False):
 def multiexpm(A, *, symmetric=False):
     """Vectorized matrix exponential."""
     if not symmetric:
-        return scipy_expm(A)
+        #return scipy_expm(A)
+        return scipy.linalg.expm(A)
 
     w, v = np.linalg.eigh(A)
     w = np.expand_dims(np.exp(w), axis=-1)
